@@ -97,6 +97,7 @@ io_round(double v,
 // INPUT (Élements d'interfaces pour recevoir des informations)
 string recupererString(string question);
 double recupererArgent(string question, double min, double max);
+size_t recupererSizeT(string question, size_t min, size_t max);
 bool questionOuiNon(string question);
 
 // VIEWS (Afficher des informations)
@@ -137,11 +138,8 @@ double recupererArgent(string question, double min, double max) {
   do {
     gotoxy(x, y);
     clreol();
-    gotoxy(x, y);
     io_clean();
-    gotoxy(x, y); // it works, dont question my methods, but my results
     result = (bool) (cin >> reponse);
-    continue;
   } while (cin.fail() || !result || cin.bad() || (reponse > max) || (reponse < min));
   reponse = io_round(reponse, 2);
 
@@ -149,6 +147,20 @@ double recupererArgent(string question, double min, double max) {
   clreol();
 
   cout << fixed << reponse << endl;
+  return reponse;
+}
+
+size_t recupererSizeT(string question, size_t min, size_t max) {
+  cout << question;
+  size_t x = wherex(), y = wherey();
+  size_t reponse = 0;
+  bool result = false;
+  do {
+    gotoxy(x, y);
+    clreol();
+    io_clean();
+    result = (bool) (cin >> reponse);
+  } while(cin.fail() || !result || cin.bad() || (reponse > max) || (reponse < min));
   return reponse;
 }
 
@@ -303,9 +315,13 @@ string toArgentStr(double argent) {
 string toDateStr(time_t time) {
   struct tm timeinfo;
   localtime_s(&timeinfo, &time);
-  return to_string(timeinfo.tm_mday) + "/"
-    + to_string(timeinfo.tm_mon) + "/"
-    + to_string(timeinfo.tm_year);
+  char buffer[20];
+  size_t result = strftime(buffer, sizeof(buffer), "%d/%m/%Y", &timeinfo);
+  if (result) {
+    return static_cast<string>(buffer);
+  } else {
+    return "[Non disponible]";
+  }
 }
 
 
@@ -489,16 +505,29 @@ void cmd_afficher(const Banque & b) {
 
   printBreaks(3);
 
-  auto client = getClient(b, 0);
+  size_t x = wherex(), y = wherey();
+  string question = "Entrez un numero de client (1 - " + to_string(b.cpt) + ") ou entrez 0 pour sortir.\nNumero : ";
+  size_t numeroClient = recupererSizeT(question, 0, b.cpt);
 
-  if (client) {
-    afficherClient(client.value());
+  gotoxy(x, y);
+  clreoscr();
+
+  if (numeroClient == 0) {
+    return;
+
+  } else {
+    optional<Client> client = getClient(b, 0);
+
+    if (client) {
+      afficherClient(client.value());
+    } else {
+      cerr << "Une erreur est survenu pour afficher ce client.";
+    }
+
+    printBreaks(2);
+    cout << "Appuyez sur une touche pour continuer ... ";
+    _getch();
   }
-
-  printBreaks(2);
-
-  cout << "Appuyez sur une touche pour continuer ... ";
-  _getch();
 }
 
 void cmd_deposer(/* Paramètres ? */) {
