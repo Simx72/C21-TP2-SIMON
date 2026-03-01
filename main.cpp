@@ -478,8 +478,10 @@ void cmd_ajouter(Banque & b)
   client.info.nas = recupererString("No d'assurance sociale");
   cout << "\n";
   for (uint8_t i = 0; i < 3; i++) {
-    string question = "Marge de credit du compte #" + to_string(i + 1) + " (Max de " + toArgentStr(MARGE_CREDIT_MAX) + ")";
-    client.comptes[i].margeCredit = recupererArgent(question, 0, MARGE_CREDIT_MAX);
+    client.comptes[i].margeCredit = recupererArgent(
+      "Marge de credit du compte #" + to_string(i + 1)
+      + " (Max de 10000.00 $)", 0,  10000.0
+    );
     client.comptes[i].solde = 0;
   }
 
