@@ -109,6 +109,8 @@ void afficherClient(const Client & client);
 bool ajouterClient(Banque &b, const Client& c);
 bool supprimerClient(Banque &b, const Client& c);
 optional<Client> getClient(const Banque &b, size_t id);
+optional<Compte> getCompte(const Client & client, const size_t numeroCompte);
+double getMaxSoldeForCompte(const Compte &compte);
 string toArgentStr(double argent);
 string toDateStr(time_t time);
 
@@ -137,15 +139,13 @@ double recupererArgent(string question, double min, double max) {
   bool result = false;
   do {
     gotoxy(x, y);
-    clreol();
+    clreoscr();
     io_clean();
     result = (bool) (cin >> reponse);
   } while (cin.fail() || !result || cin.bad() || (reponse > max) || (reponse < min));
   reponse = io_round(reponse, 2);
-
   gotoxy(x, y);
-  clreol();
-
+  clreoscr();
   cout << fixed << reponse << endl;
   return reponse;
 }
@@ -162,6 +162,31 @@ size_t recupererSizeT(string question, size_t min, size_t max) {
     result = (bool) (cin >> reponse);
   } while(cin.fail() || !result || cin.bad() || (reponse > max) || (reponse < min));
   return reponse;
+}
+
+size_t recupererNumeroClient(const Banque &b) {
+  size_t x = wherex(), y = wherey();
+  string question = "Entrez un numero de client (1 - " + to_string(b.cpt) + " ou 0 pour annuler).\nNumero : ";
+  size_t numeroClient = recupererSizeT(question, 0, b.cpt);
+  gotoxy(x, y);
+  clreoscr();
+  return numeroClient;
+}
+
+size_t recupererNumeroCompte() {
+  string question = "Quel compte (1-" + to_string(COMPTES_MAX) + " ou 0 pour annuler) ? ";
+  size_t numeroCompte = recupererSizeT(question, 0, COMPTES_MAX);
+  return numeroCompte;
+}
+
+double recupererDepot(const Compte & compte) {
+  if (double depotMax = getMaxSoldeForCompte(compte)) {
+    string question = "Montant (max: " + toArgentStr(depotMax) + ")";
+    return recupererArgent(question, 0, depotMax);
+  }
+
+  cerr << "Une erreur est survenu";
+  return {};
 }
 
 bool questionOuiNon(string question) {
@@ -204,22 +229,21 @@ void printCenter(string text, size_t width) {
   }
 }
 
-void afficherClient(const Client & client) {
+void afficherNomClient(const Client & client) {
   cout << "Nom: " << client.info.nom.prenom
-       << " " << client.info.nom.nom;
+  << " " << client.info.nom.nom;
+}
 
-  // Width of a table cell
+void afficherSoldesClient(const Client & client) {
   const size_t TABLE_WIDTH = 18;
-
-  printBreaks(2);
 
   // Print table headers
   cout << left
-    << setw(TABLE_WIDTH) << " No. de compte"
-    << '|'
-    << setw(TABLE_WIDTH) << " Solde"
-    << '|'
-    << setw(TABLE_WIDTH) << " Marge de credit";
+  << setw(TABLE_WIDTH) << " No. de compte"
+  << '|'
+  << setw(TABLE_WIDTH) << " Solde"
+  << '|'
+  << setw(TABLE_WIDTH) << " Marge de credit";
 
   printBreaks(1);
   // Print <hr>
@@ -236,6 +260,14 @@ void afficherClient(const Client & client) {
     printCenter(toArgentStr(compte.margeCredit), TABLE_WIDTH);
     printBreaks(1);
   }
+}
+
+void afficherClient(const Client & client) {
+  afficherNomClient(client);
+
+  printBreaks(2);
+
+  afficherSoldesClient(client);
 
   printBreaks(1);
 
@@ -257,12 +289,14 @@ void afficherClient(const Client & client) {
     { "\nMembre", toDateStr(client.date) },
   };
 
+  const size_t WIDTH = 18;
+
   cout << left;
   for (size_t i = 0; i < 7; i++) {
     Info info = infos[i];
-    cout << setw(TABLE_WIDTH) << info.key;
+    cout << setw(WIDTH) << info.key;
     cout << ": ";
-    cout << setw(TABLE_WIDTH) << info.value;
+    cout << setw(WIDTH) << info.value;
     printBreaks(1);
   }
 }
@@ -291,12 +325,33 @@ bool supprimerClient(Banque &b, size_t id) {
   }
 }
 
+bool deposerArgent(Banque & b, size_t numeroClient, size_t numeroCompte, double montant) {
+  if (numeroClient < b.cpt && numeroCompte < COMPTES_MAX) {
+    b.clients[numeroClient].comptes[numeroCompte].solde += montant;
+    return true;
+  } else {
+    return false;
+  }
+}
+
 optional<Client> getClient(const Banque &b, size_t id) {
   if (id < b.cpt) {
     return b.clients[id];
   } else {
     return {};
   }
+}
+
+optional<Compte> getCompte(const Client & client, const size_t numeroCompte) {
+  if (numeroCompte < COMPTES_MAX) {
+    return client.comptes[numeroCompte];
+  } else {
+    return {};
+  }
+}
+
+double getMaxSoldeForCompte(const Compte &compte) {
+  return SOLDE_COMPTE_MAX - compte.solde;
 }
 
 string toArgentStr(double argent) {
@@ -503,18 +558,13 @@ void cmd_afficher(const Banque & b) {
 
   printBreaks(3);
 
-  size_t x = wherex(), y = wherey();
-  string question = "Entrez un numero de client (1 - " + to_string(b.cpt) + ") ou entrez 0 pour sortir.\nNumero : ";
-  size_t numeroClient = recupererSizeT(question, 0, b.cpt);
-
-  gotoxy(x, y);
-  clreoscr();
+  size_t numeroClient = recupererNumeroClient(b);
 
   if (numeroClient == 0) {
     return;
 
   } else {
-    optional<Client> client = getClient(b, 0);
+    optional<Client> client = getClient(b, numeroClient - 1);
 
     if (client) {
       afficherClient(client.value());
@@ -528,12 +578,37 @@ void cmd_afficher(const Banque & b) {
   }
 }
 
-void cmd_deposer(/* Paramètres ? */) {
+void cmd_deposer(Banque & b) {
   clrscr();
 
-  cout << "Vous etes dans Deposer";
+  cout << "CMD - Faire un depot dans un compte client";
 
-  _getch();
+  printBreaks(3);
+
+  size_t numeroClient = recupererNumeroClient(b);
+
+  if (numeroClient > 0) {
+    Client client = getClient(b, numeroClient - 1).value();
+
+    afficherNomClient(client);
+    printBreaks(2);
+    afficherSoldesClient(client);
+    printBreaks(3);
+
+    size_t numeroCompte = recupererNumeroCompte();
+
+    if (numeroCompte > 0) {
+      Compte compte = getCompte(client, numeroCompte - 1).value();
+
+      double montant = recupererDepot(compte);
+
+      bool ok = deposerArgent(b, numeroClient - 1, numeroCompte - 1, montant);
+      if (!ok) {
+        cerr << "Une erreur est survenue.";
+        _getch();
+      }
+    }
+  }
 }
 
 void cmd_retirer(/* Paramètres ? */) {
@@ -598,7 +673,7 @@ int main() {
     switch (cmd) {
       case Cmd::AJOUTER:      cmd_ajouter(b); break;
       case Cmd::AFFICHER:     cmd_afficher(b); break;
-      case Cmd::DEPOSER:      cmd_deposer(); break;
+      case Cmd::DEPOSER:      cmd_deposer(b); break;
       case Cmd::RETIRER:      cmd_retirer(); break;
       case Cmd::VIRER:        cmd_virer(); break;
       case Cmd::LISTER:       cmd_lister(); break;
