@@ -4,7 +4,6 @@
 #include <ctime>
 #include <iomanip>
 #include <iostream>
-#include <optional>
 #include <string>
 
 #include <conio.h>
@@ -108,8 +107,8 @@ void afficherClient(const Client & client);
 // MODELS (Modifier des données)
 bool ajouterClient(Banque &b, const Client& c);
 bool supprimerClient(Banque &b, const Client& c);
-optional<Client> getClient(const Banque &b, size_t id);
-optional<Compte> getCompte(const Client & client, const size_t numeroCompte);
+Client getClient(const Banque &b, size_t numeroClient);
+Compte getCompte(const Client &client, const size_t numeroCompte);
 double getMaxSoldeForCompte(const Compte &compte);
 string toArgentStr(double argent);
 string toDateStr(time_t time);
@@ -334,7 +333,7 @@ bool deposerArgent(Banque & b, size_t numeroClient, size_t numeroCompte, double 
   }
 }
 
-optional<Client> getClient(const Banque &b, size_t id) {
+Client getClient(const Banque &b, size_t id) {
   if (id < b.cpt) {
     return b.clients[id];
   } else {
@@ -342,7 +341,7 @@ optional<Client> getClient(const Banque &b, size_t id) {
   }
 }
 
-optional<Compte> getCompte(const Client & client, const size_t numeroCompte) {
+Compte getCompte(const Client & client, const size_t numeroCompte) {
   if (numeroCompte < COMPTES_MAX) {
     return client.comptes[numeroCompte];
   } else {
@@ -370,8 +369,10 @@ string toArgentStr(double argent) {
 string toDateStr(time_t time) {
   struct tm timeinfo;
   localtime_s(&timeinfo, &time);
+
   char buffer[20];
   size_t result = strftime(buffer, sizeof(buffer), "%d/%m/%Y", &timeinfo);
+
   if (result) {
     return static_cast<string>(buffer);
   } else {
@@ -560,17 +561,10 @@ void cmd_afficher(const Banque & b) {
 
   size_t numeroClient = recupererNumeroClient(b);
 
-  if (numeroClient == 0) {
-    return;
+  if (numeroClient > 0) {
+    Client client = getClient(b, numeroClient - 1);
 
-  } else {
-    optional<Client> client = getClient(b, numeroClient - 1);
-
-    if (client) {
-      afficherClient(client.value());
-    } else {
-      cerr << "Une erreur est survenu pour afficher ce client.";
-    }
+    afficherClient(client);
 
     printBreaks(2);
     cout << "Appuyez sur une touche pour continuer ... ";
@@ -580,15 +574,13 @@ void cmd_afficher(const Banque & b) {
 
 void cmd_deposer(Banque & b) {
   clrscr();
-
   cout << "CMD - Faire un depot dans un compte client";
-
   printBreaks(3);
 
   size_t numeroClient = recupererNumeroClient(b);
 
   if (numeroClient > 0) {
-    Client client = getClient(b, numeroClient - 1).value();
+    Client client = getClient(b, numeroClient - 1);
 
     afficherNomClient(client);
     printBreaks(2);
@@ -598,7 +590,7 @@ void cmd_deposer(Banque & b) {
     size_t numeroCompte = recupererNumeroCompte();
 
     if (numeroCompte > 0) {
-      Compte compte = getCompte(client, numeroCompte - 1).value();
+      Compte compte = getCompte(client, numeroCompte - 1);
 
       double montant = recupererDepot(compte);
 
@@ -654,7 +646,9 @@ void cmd_quitter(/* Paramètres ? */) {
 /* LA FONCTION PRINCIPALE */
 /* ---------------------- */
 
+
 int main() {
+
   // permet de faire un 'cout' avec les accents directement
   setcp(1252);
   // tous les montants sont affichés avec une précision à 2
