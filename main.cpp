@@ -97,16 +97,23 @@ io_round(double v,
 string recupererString(string question);
 double recupererArgent(string question, double min, double max);
 size_t recupererSizeT(string question, size_t min, size_t max);
+size_t recupererNumeroClient(const Banque &b);
+size_t recupererNumeroCompte();
+double recupererDepot(const Compte & compte);
 bool questionOuiNon(string question);
 
 // VIEWS (Afficher des informations)
 void printBreaks(size_t n);
+void printRepeat(char c, size_t n);
 void printCenter(string text, size_t width);
+void afficherNomClient(const Client & client);
+void afficherSoldesClient(const Client & client);
 void afficherClient(const Client & client);
 
 // MODELS (Modifier des données)
 bool ajouterClient(Banque &b, const Client& c);
 bool supprimerClient(Banque &b, const Client& c);
+bool deposerArgent(Banque & b, size_t numeroClient, size_t numeroCompte, double montant);
 Client getClient(const Banque &b, size_t numeroClient);
 Compte getCompte(const Client &client, const size_t numeroCompte);
 double getMaxSoldeForCompte(const Compte &compte);
