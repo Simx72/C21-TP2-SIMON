@@ -234,7 +234,7 @@ void printCenter(string text, size_t width) {
 }
 
 void afficherNomClient(const Client &client) {
-    cout << "Nom: " << client.info.nom.prenom << " " << client.info.nom.nom;
+    cout << "Nom: " << client.info.nom.prenom << " " << client.info.nom.nom << endl;
 }
 
 void afficherSoldesClient(const Client &client) {
@@ -488,7 +488,15 @@ void afficherMenu() {
     clrscr();
 
     cout << left;
-    cout << setw(indent) << "" << "BANQUE CVM - Succ C21\n\n\n";
+    cout << setw(indent) << "" << "BANQUE CVM - Succ C21";
+
+#ifdef DEBUG
+    setcolor(Color::_aqua);
+    cout << " (DEBUG MODE)";
+    setcolor(Color::wht);
+#endif
+
+    printBreaks(3);
 
     for (size_t i = 0; i < 8; i++) {
         cout << setw(indent) << "";
@@ -764,6 +772,45 @@ int main() {
     Cmd cmd = Cmd::INCONNUE;
 
     Banque b; // cout << b.cpt;    ==> afficherait le nombre actuel de client
+
+#ifdef DEBUG
+// Ajouter des clients en mode DEBUG
+// clang-format off
+ajouterClient(b, {
+    {
+        { "Louis", "Pasteur" },
+        { "1234", "le Chemin", "Paris", "A1B2C3" },
+        "+1 234 567 8901", "012837123"
+    }, {
+        { 200.0, 1000.0 },
+        { 200.0, 1000.0 },
+        { 200.0, 1000.0 }
+    }, time(nullptr)
+});
+ajouterClient(b, {
+    {
+        { "Marie", "Curie" },
+        { "7", "Sklodowska", "Warsaw", "W1R8S6" },
+        "+1 934 066 1867", "934066186"
+    }, {
+        { 900.0, 2000.0 },
+        { 900.0, 2000.0 },
+        { 900.0, 2000.0 }
+    }, time(nullptr)
+});
+ajouterClient(b, {
+    {
+        { "Max", "Planck" },
+        { "23", "Rue d'April", "Kiel", "M8C8K7" },
+        "+1 887 858 1947", "887858194"
+    }, {
+        { 2000.0, 100.0 },
+        { 2000.0, 100.0 },
+        { 2000.0, 100.0 }
+    }, time(nullptr)
+});
+// clang-format on
+#endif
 
     do {
         afficherMenu();
