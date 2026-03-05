@@ -113,10 +113,11 @@ bool supprimerClient(Banque &b, const Client &c);
 // clang-format off
 bool deposerArgent(Banque &b, size_t numeroClient, size_t numeroCompte, double montant);
 bool retirerArgent(Banque &b, size_t numeroClient, size_t numeroCompte, double montant);
+bool virerArgent(Banque &b, size_t numeroClient, size_t numeroCompteSrc, size_t numeroCompteDst, double montant);
 // clang-format on
 Client getClient(const Banque &b, size_t numeroClient);
 Compte getCompte(const Client &client, const size_t numeroCompte);
-double getMaxSoldeForCompte(const Compte &compte);
+double getDepotMaximum(const Compte &compte);
 double getRetraitMaximum(const Compte &compte);
 string toArgentStr(double argent);
 string toDateStr(time_t time);
@@ -344,6 +345,15 @@ bool retirerArgent(Banque &b, size_t numeroClient, size_t numeroCompte,
     }
 }
 
+bool virerArgent(Banque &b, size_t numeroClient, size_t numeroCompteSrc,
+                 size_t numeroCompteDst, double montant) {
+    bool retirerOk = retirerArgent(b, numeroClient, numeroCompteSrc, montant);
+    if (!retirerOk)
+        return false;
+    bool deposerOk = deposerArgent(b, numeroClient, numeroCompteDst, montant);
+    return deposerOk;
+}
+
 Client getClient(const Banque &b, size_t id) {
     if (id < b.cpt) {
         return b.clients[id];
@@ -360,7 +370,7 @@ Compte getCompte(const Client &client, const size_t numeroCompte) {
     }
 }
 
-double getMaxSoldeForCompte(const Compte &compte) {
+double getDepotMaximum(const Compte &compte) {
     return SOLDE_COMPTE_MAX - compte.solde;
 }
 
@@ -610,7 +620,7 @@ void cmd_deposer(Banque &b) {
             numeroCompte--;
             Compte compte = getCompte(client, numeroCompte);
 
-            double max = getMaxSoldeForCompte(compte);
+            double max = getDepotMaximum(compte);
             cout << "Maximum deposable : " + toArgentStr(max);
 
             printBreaks(1);
@@ -664,12 +674,57 @@ void cmd_retirer(Banque &b) {
     }
 }
 
-void cmd_virer(/* Paramètres ? */) {
+void cmd_virer(Banque &b) {
     clrscr();
+    cout << "CMD - faire un virement dans les comptes d'un seul client";
+    printBreaks(3);
 
-    cout << "Vous etes dans Virer";
+    size_t numeroClient = recupererNumeroClient(b);
 
-    _getch();
+    if (numeroClient > 0) {
+        numeroClient--;
+        Client client = getClient(b, numeroClient);
+
+        afficherNomClient(client);
+        afficherSoldesClient(client);
+
+        printBreaks(2);
+        cout << "SOURCE:\n";
+        size_t numeroCompteSrc = recupererNumeroCompte();
+        if (numeroCompteSrc == 0)
+            return;
+
+        printBreaks(1);
+        cout << "DESTINATION:\n";
+        size_t numeroCompteDst = recupererNumeroCompte();
+        if (numeroCompteDst == 0)
+            return;
+
+        // Get comptes
+        numeroCompteSrc--;
+        numeroCompteDst--;
+        Compte compteSrc = getCompte(client, numeroCompteSrc);
+        Compte compteDst = getCompte(client, numeroCompteDst);
+
+        // Quantite retirable
+        double maxSrc = getRetraitMaximum(compteSrc);
+        // Quantite deposable
+        double maxDst = getRetraitMaximum(compteDst);
+        // Quantite transferable
+        double max = (maxSrc > maxDst) ? maxSrc : maxDst;
+
+        double montant = recupererArgent("Montant", 0, max);
+
+        bool ok = virerArgent(b, numeroClient, numeroCompteSrc, numeroCompteDst,
+                              montant);
+        printBreaks(1);
+        if (ok) {
+            cout << "Virement complete avec succes.";
+        } else {
+            cout << "Une erreur est survenu.";
+        }
+        _getch();
+    }
 }
 
 void cmd_lister(/* Paramètres ? */) {
@@ -730,7 +785,7 @@ int main() {
             cmd_retirer(b);
             break;
         case Cmd::VIRER:
-            cmd_virer();
+            cmd_virer(b);
             break;
         case Cmd::LISTER:
             cmd_lister();
