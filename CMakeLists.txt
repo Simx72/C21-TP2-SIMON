@@ -6,12 +6,24 @@ project(GestionBanque)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Compile options
+# windows/linux
 IF (WIN32)
+    MESSAGE("Compile mode: Windows")
     # set stuff for windows
 ELSE()
     # set stuff for other systems
     set(CMAKE_CXX_COMPILER x86_64-w64-mingw32-g++)
-    add_compile_options(-Wall -Wextra -Wpedantic)
+    # development/production
+    IF ($ENV{DEBUG})
+        # Development mode
+        MESSAGE("Compile mode: Linux + Development")
+        add_compile_options(-DDEBUG -O0)
+    ELSE()
+        # Production mode
+        MESSAGE("Compile mode: Linux + Production")
+        add_compile_options(-DNDEBUG -O3)
+        add_compile_options(-Wall -Wextra -Wpedantic)
+    ENDIF()
 ENDIF()
 
 # Link
