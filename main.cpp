@@ -103,6 +103,8 @@ bool questionOuiNon(string question);
 void printBreaks(size_t n);
 void printRepeat(char c, size_t n);
 void printCenter(string text, size_t width);
+void printLeft(string text, size_t width);
+void printRight(string text, size_t width);
 void afficherNomClient(const Client &client);
 void afficherSoldesClient(const Client &client);
 void afficherClient(const Client &client);
@@ -119,6 +121,7 @@ Client getClient(const Banque &b, size_t numeroClient);
 Compte getCompte(const Client &client, const size_t numeroCompte);
 double getDepotMaximum(const Compte &compte);
 double getRetraitMaximum(const Compte &compte);
+double getRetraitMaximumTotal(const Client &client);
 string toArgentStr(double argent);
 string toDateStr(time_t time);
 
@@ -129,7 +132,8 @@ string toDateStr(time_t time);
 string recupererString(string question) {
     const uint32_t width = 19;
     string reponse;
-    cout << left << setw(width) << question << " : ";
+    printLeft(question, width);
+    cout << " : ";
     struct {
         size_t x, y;
     } pos = {wherex(), wherey()};
@@ -144,7 +148,8 @@ string recupererString(string question) {
 double recupererArgent(string question, double min, double max) {
     const uint32_t width = 19;
     double reponse = 0.0;
-    cout << left << setw(width) << question << " : ";
+    printLeft(question, width);
+    cout << " : ";
     size_t x = wherex(), y = wherey();
     bool result = false;
     do {
@@ -232,20 +237,41 @@ void printCenter(string text, size_t width) {
         cout << text;
     }
 }
+void printLeft(string text, size_t width) {
+    if (text.size() < width) {
+        // print center
+        cout << left << setw(width) << text;
+    } else {
+        // just print
+        cout << text;
+    }
+}
+void printRight(string text, size_t width) {
+    if (text.size() < width) {
+        // print center
+        cout << right << setw(width) << text;
+    } else {
+        // just print
+        cout << text;
+    }
+}
 
 void afficherNomClient(const Client &client) {
-    cout << "Nom: " << client.info.nom.prenom << " " << client.info.nom.nom << endl;
+    cout << "Nom: " << client.info.nom.prenom << " " << client.info.nom.nom
+         << endl;
 }
 
 void afficherSoldesClient(const Client &client) {
     const size_t TABLE_WIDTH = 18;
 
     // Print table headers
-    cout << left << setw(TABLE_WIDTH) << " No. de compte" << '|'
-         << setw(TABLE_WIDTH) << " Solde" << '|' << setw(TABLE_WIDTH)
-         << " Marge de credit";
-
+    printLeft(" No. de compte", TABLE_WIDTH);
+    cout << '|';
+    printLeft(" Solde", TABLE_WIDTH);
+    cout << '|';
+    printLeft(" Marge de credit", TABLE_WIDTH);
     printBreaks(1);
+
     // Print <hr>
     printRepeat('-', (TABLE_WIDTH * 3) + 2);
     printBreaks(1);
@@ -291,12 +317,12 @@ void afficherClient(const Client &client) {
 
     const size_t WIDTH = 18;
 
-    cout << left;
     for (size_t i = 0; i < 7; i++) {
         Info info = infos[i];
-        cout << setw(WIDTH) << info.key;
+        cout << " ";
+        printLeft(info.key, WIDTH);
         cout << ": ";
-        cout << setw(WIDTH) << info.value;
+        printLeft(info.value, WIDTH);
         printBreaks(1);
     }
 }
@@ -376,6 +402,15 @@ double getDepotMaximum(const Compte &compte) {
 
 double getRetraitMaximum(const Compte &compte) {
     return compte.solde + compte.margeCredit;
+}
+
+double getRetraitMaximumTotal(const Client &client) {
+    double retraitMaximum = 0;
+    for (size_t i = 0; i < COMPTES_MAX; i++) {
+        Compte compte = getCompte(client, i);
+        retraitMaximum += getRetraitMaximum(compte);
+    }
+    return retraitMaximum;
 }
 
 string toArgentStr(double argent) {
@@ -487,8 +522,8 @@ void afficherMenu() {
 
     clrscr();
 
-    cout << left;
-    cout << setw(indent) << "" << "BANQUE CVM - Succ C21";
+    printRepeat(' ', indent);
+    cout << "BANQUE CVM - Succ C21";
 
 #ifdef DEBUG
     setcolor(Color::_aqua);
@@ -735,15 +770,54 @@ void cmd_virer(Banque &b) {
     }
 }
 
-void cmd_lister(/* Paramètres ? */) {
+void cmd_lister(const Banque &b) {
     clrscr();
+    cout << "CMD - lister les clients et leur crédit acutel";
+    printBreaks(3);
 
-    cout << "Vous etes dans Lister";
+    const size_t quantiteClients = b.cpt;
+
+    if (quantiteClients == 0) {
+        cout << "Aucun client";
+    } else {
+        cout << "Rapport pour " << quantiteClients << "client";
+        if (quantiteClients > 1) {
+            cout << "s";
+        }
+        printBreaks(2);
+
+        const size_t TAILLE[3] = {6, 40, 22};
+
+        // Table header
+        printCenter("No.", TAILLE[0]);
+        cout << "| ";
+        printCenter("Nom", TAILLE[1] - 2);
+        cout << "| ";
+        printCenter("Limite de retrait", TAILLE[2] - 2);
+        printBreaks(1);
+        // Horizontal line
+        printRepeat('-', TAILLE[0] + TAILLE[1] + TAILLE[2]);
+        printBreaks(2);
+
+        for (size_t i = 0; i < quantiteClients; i++) {
+            Client client = getClient(b, i);
+            string nom = client.info.nom.prenom + " " + client.info.nom.nom;
+            double limiteRetrait = getRetraitMaximumTotal(client);
+
+            cout << " ";
+            printLeft(to_string(i + 1), TAILLE[0] - 1);
+            cout << "|  ";
+            printLeft(nom, TAILLE[1] - 3);
+            cout << "| ";
+            printRight(toArgentStr(limiteRetrait), TAILLE[2] - 2 - 2);
+            printBreaks(1);
+        }
+    }
 
     _getch();
 }
 
-void cmd_supprimer(/* Paramètres ? */) {
+void cmd_supprimer(Banque &b) {
     clrscr();
 
     cout << "Vous etes dans Supprimer";
@@ -751,7 +825,7 @@ void cmd_supprimer(/* Paramètres ? */) {
     _getch();
 }
 
-void cmd_quitter(/* Paramètres ? */) {
+void cmd_quitter() {
     clrscr();
     gotoxy(10, 20);
     cout << "Au revoir!";
@@ -774,8 +848,8 @@ int main() {
     Banque b; // cout << b.cpt;    ==> afficherait le nombre actuel de client
 
 #ifdef DEBUG
-// Ajouter des clients en mode DEBUG
-// clang-format off
+    // Ajouter des clients en mode DEBUG
+    // clang-format off
 ajouterClient(b, {
     {
         { "Louis", "Pasteur" },
@@ -835,10 +909,10 @@ ajouterClient(b, {
             cmd_virer(b);
             break;
         case Cmd::LISTER:
-            cmd_lister();
+            cmd_lister(b);
             break;
         case Cmd::SUPPRIMER:
-            cmd_supprimer();
+            cmd_supprimer(b);
             break;
         case Cmd::QUITTER:
             cmd_quitter();
