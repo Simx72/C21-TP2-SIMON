@@ -742,6 +742,7 @@ void cmd_virer(Banque &b) {
         size_t numeroCompteDst = recupererNumeroCompte();
         if (numeroCompteDst == 0)
             return;
+        printBreaks(1);
 
         // Get comptes
         numeroCompteSrc--;
@@ -819,10 +820,34 @@ void cmd_lister(const Banque &b) {
 
 void cmd_supprimer(Banque &b) {
     clrscr();
+    cout << "CMD - Supprimer un client";
+    printBreaks(3);
 
-    cout << "Vous etes dans Supprimer";
+    size_t numeroClient = recupererNumeroClient(b);
+    if (numeroClient > 0) {
+        cout << "Etes vous sur de vouloir supprimer"
+             << "le client #" << numeroClient << " ?";
+        printBreaks(1);
 
-    _getch();
+        numeroClient--;
+        const Client client = getClient(b, numeroClient);
+
+        afficherClient(client);
+
+        bool supprimer = questionOuiNon("Supprimer ?");
+        printBreaks(1);
+        if (supprimer) {
+            bool ok = supprimerClient(b, numeroClient);
+            if (ok) {
+                cout << "Client supprime avec succes";
+            } else {
+                cout << "Une erreur est survenue.";
+            }
+        } else {
+            cout << "Le client n'a pas ete supprime";
+        }
+        _getch();
+    }
 }
 
 void cmd_quitter() {

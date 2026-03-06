@@ -11,6 +11,7 @@ IF (WIN32)
     MESSAGE("Compile mode: Windows")
     # set stuff for windows
 ELSE()
+    MESSAGE("Compile mode: Linux")
     # set stuff for other systems
     set(CMAKE_CXX_COMPILER x86_64-w64-mingw32-g++)
     # development/production
