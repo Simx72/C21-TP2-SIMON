@@ -3,7 +3,9 @@
 #include <cstdint>
 #include <ctime>
 #include <iomanip>
+#include <ios>
 #include <iostream>
+#include <limits>
 #include <string>
 
 #include <conio.h>
@@ -146,22 +148,23 @@ string recupererString(string question) {
 };
 
 double recupererArgent(string question, double min, double max) {
-    const uint32_t width = 19;
+    const uint32_t width = 20;
     double reponse = 0.0;
     printLeft(question, width);
-    cout << " : ";
+    if (question.back() != ' ') {
+        cout << " ";
+    }
+    cout << ": ";
     size_t x = wherex(), y = wherey();
-    bool result = false;
     do {
         gotoxy(x, y);
-        clreoscr();
+        clreol();
         io_clean();
-        result = (bool)(cin >> reponse);
-    } while (cin.fail() || !result || cin.bad() || (reponse > max) ||
-             (reponse < min));
+        cin >> reponse;
+    } while (cin.fail() || (reponse > max) || (reponse < min));
     reponse = io_round(reponse, 2);
     gotoxy(x, y);
-    clreoscr();
+    clreol();
     cout << fixed << reponse << endl;
     return reponse;
 }
@@ -204,9 +207,8 @@ bool questionOuiNon(string question) {
     int ch;
     do {
         gotoxy(x, y);
-        clreol();
-        io_clean();
         ch = toupper(_getch());
+        cout << (char)ch;
     } while (ch != 'O' && ch != 'N');
     return ch == 'O';
 }
@@ -466,10 +468,12 @@ void io_bip() { Beep(200, 300); }
 void io_clean() // pour vider les 2 tampons d'input
 {
     cin.clear();
-    cin.ignore(cin.rdbuf()->in_avail());
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    // cin.ignore(cin.rdbuf()->in_avail(), '\n');
     // vide le tampon du cin
+
     // while (_kbhit())
-    //(void)_getch();                                           // vide le
+    //     (void)_getch(); // vide le
     // tampon de la console
 
     //  En détail:
