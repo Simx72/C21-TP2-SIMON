@@ -8,3 +8,6 @@ dev:
 
 teacher:
 	wine exes/C21_TP2_original_AThiboutot.exe
+
+package:
+	./package.sh
